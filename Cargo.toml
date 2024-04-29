@@ -1,0 +1,13 @@
+[package]
+name = "zathura-images"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+cairo-rs = "0.6"
+pango = "0.6"
+pangocairo = "0.7"
+zathura-plugin = "0.4.0"
