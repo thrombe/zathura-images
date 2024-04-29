@@ -5,6 +5,12 @@
     nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+
+    zls = {
+      url = "github:zigtools/zls/0.12.0";
+      inputs.nixpkgs.follows = "nixpkgs";
+      inputs.flake-utils.follows = "flake-utils";
+    };
   };
 
   outputs = inputs:
@@ -20,6 +26,25 @@
               inherit system;
             };
           })
+        ];
+      };
+
+
+      zathura-images = pkgs.stdenv.mkDerivation {
+        name = "zathura-images";
+
+        nativeBuildInputs = with pkgs; [
+          pkg-config
+          unstable.zig_0_12
+          unstable.zathura
+
+          pango
+          cairo
+          girara
+          # za
+
+          # opencv
+          imagemagick
         ];
       };
 
@@ -39,6 +64,8 @@
       env-packages = pkgs:
         with pkgs;
           [
+            # unstable.zls
+            (flakeDefaultPackage inputs.zls)
           ]
           ++ (custom-commands pkgs);
 
@@ -46,6 +73,8 @@
       # stdenv = pkgs.gccStdenv;
     in {
       packages = {
+        default = zathura-images;
+        inherit zathura-images;
       };
 
       devShells.default =
@@ -54,9 +83,12 @@
         } {
           nativeBuildInputs = (env-packages pkgs) ++ [fhs];
           inputsFrom = [
+            zathura-images
           ];
           shellHook = ''
             export PROJECT_ROOT="$(pwd)"
+            export LIBCLANG_PATH="${pkgs.unstable.llvmPackages.libclang.lib}/lib";
+            export CLANGD_FLAGS="--compile-commands-dir=$PROJECT_ROOT/plugin --query-driver=$(which $CXX)"
           '';
         };
     });
