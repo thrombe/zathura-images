@@ -23,36 +23,6 @@
         ];
       };
 
-      meta = with pkgs.lib; {
-        homepage = manifest.repository;
-        description = manifest.description;
-        license = licenses.mit;
-        platforms = platforms.linux;
-      };
-      manifest = (pkgs.lib.importTOML ./Cargo.toml).package;
-      zathura-images = pkgs.unstable.rustPlatform.buildRustPackage {
-        pname = manifest.name;
-        version = manifest.version;
-        cargoLock = {
-          lockFile = ./Cargo.lock;
-        };
-        src = pkgs.lib.cleanSource ./.;
-
-        LIBCLANG_PATH="${pkgs.unstable.llvmPackages.libclang.lib}/lib";
-
-        nativeBuildInputs = with pkgs; [
-          pkg-config
-          pango
-          cairo
-          # llvmPackages_17.libclang.lib
-          # unstable.clang
-        ];
-        buildInputs = with pkgs; [
-        ];
-
-        inherit meta;
-      };
-
       fhs = pkgs.buildFHSEnv {
         name = "fhs-shell";
         targetPkgs = p: (env-packages p) ++ (custom-commands p);
@@ -69,11 +39,6 @@
       env-packages = pkgs:
         with pkgs;
           [
-            unstable.rust-analyzer
-            unstable.rustfmt
-            unstable.clippy
-            unstable.clang
-            # unstable.rustup
           ]
           ++ (custom-commands pkgs);
 
@@ -81,8 +46,6 @@
       # stdenv = pkgs.gccStdenv;
     in {
       packages = {
-        default = zathura-images;
-        inherit zathura-images;
       };
 
       devShells.default =
@@ -91,11 +54,9 @@
         } {
           nativeBuildInputs = (env-packages pkgs) ++ [fhs];
           inputsFrom = [
-            zathura-images
           ];
           shellHook = ''
             export PROJECT_ROOT="$(pwd)"
-            export RUST_BACKTRACE="1"
           '';
         };
     });
