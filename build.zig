@@ -23,6 +23,11 @@ pub fn build(b: *std.Build) void {
         .target = target,
         .optimize = optimize,
     });
+    lib.linkSystemLibrary2("zathura", .{});
+    lib.linkSystemLibrary2("ImageMagick", .{});
+    lib.linkSystemLibrary2("MagickWand", .{});
+    lib.linkSystemLibrary2("MagickCore", .{});
+    lib.linkLibC();
 
     // This declares intent for the library to be installed into the standard
     // location when the user invokes the "install" step (the default step when
