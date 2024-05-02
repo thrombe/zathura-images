@@ -43,16 +43,16 @@ fn plugin_page_render_cairo(page: ?*zathura.zathura_page_t, data: ?*anyopaque, c
     const doc = zathura.zathura_page_get_document(page);
     const surface = zathura.cairo_get_target(context);
 
-    const p_width_i: usize = @intCast(zathura.cairo_image_surface_get_width(surface));
-    const p_height_i: usize = @intCast(zathura.cairo_image_surface_get_height(surface));
+    const surface_width: usize = @intCast(zathura.cairo_image_surface_get_width(surface));
+    const surface_height: usize = @intCast(zathura.cairo_image_surface_get_height(surface));
 
     const image = zathura.cairo_image_surface_get_data(surface);
 
     const wand_o: *magick.MagickWand = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
     const wand = magick.CloneMagickWand(wand_o);
     defer _ = magick.DestroyMagickWand(wand);
-    _ = magick.MagickResizeImage(wand, @intCast(p_width_i), @intCast(p_height_i), magick.TriangleFilter);
-    const ret = magick.MagickExportImagePixels(wand, 0, 0, p_width_i, p_height_i, "BGRA", magick.CharPixel, image);
+    _ = magick.MagickResizeImage(wand, @intCast(surface_width), @intCast(surface_height), magick.TriangleFilter);
+    const ret = magick.MagickExportImagePixels(wand, 0, 0, surface_width, surface_height, "BGRA", magick.CharPixel, image);
     if (ret == magick.MagickFalse) {
         return zathura.ZATHURA_ERROR_UNKNOWN;
     }
