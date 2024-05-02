@@ -85,29 +85,7 @@ fn plugin_open(doc: ?*zathura.zathura_document_t) callconv(.C) zathura.zathura_e
         std.debug.print("can't do the magic wand thing", .{});
         return zathura.ZATHURA_ERROR_UNKNOWN;
     }
-    // const iter = magick.NewPixelIterator(wand);
-    // const height = magick.MagickGetImageHeight(wand);
-    // for (0..height) |_| {
-    //     var width: usize = 0;
-    //     var pixel: magick.PixelInfo = .{};
-    //     const pixels = magick.PixelGetNextIteratorRow(iter, &width);
-    //     for (0..width) |x| {
-    //         magick.PixelGetMagickColor(pixels[x], &pixel);
-    //         // std.debug.print("{d} {d} {d} {d} \n", .{ pixel.red / 65535.0, pixel.green / 65535.0, pixel.blue / 65535.0, pixel.alpha / 65535.0 });
-    //     }
-    // }
     zathura.zathura_document_set_data(doc, wand);
-
-    // const exc: ?*magick.ExceptionInfo = magick.AcquireExceptionInfo();
-    // defer _ = magick.DestroyExceptionInfo(exc);
-    // const info: ?*magick.ImageInfo = magick.CloneImageInfo(null);
-    // if (info) |i| {
-    //     _ = c_string.strcpy(i.filename[0..].ptr, p);
-    // }
-    // defer _ = magick.DestroyImageInfo(info);
-    // const img: ?*magick.Image = magick.ReadImage(info, exc);
-    // // defer _ = magick.DestroyImage(img);
-    // zathura.zathura_document_set_data(doc, img);
 
     zathura.zathura_document_set_number_of_pages(doc, 1);
     return zathura.ZATHURA_ERROR_OK;
