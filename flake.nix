@@ -29,10 +29,15 @@
         ];
       };
 
-      zathura-images = pkgs.stdenv.mkDerivation {
+      zathura-images = pkgs.stdenv.mkDerivation rec {
         name = "zathura-images";
 
         src = pkgs.lib.cleanSource ./.;
+
+        installPhase = ''
+          mkdir -p $out/lib/zathura
+          mv ./zig-out/lib/lib${name}.so $out/lib/zathura/.
+        '';
 
         nativeBuildInputs = with pkgs; [
           pkg-config
@@ -47,6 +52,11 @@
           # opencv
           imagemagick
         ];
+      };
+      zathura-images-overlay = self: super: {
+        zathura = super.zathura.override (prev: {
+          plugins = (prev.plugins or []) ++ [zathura-images];
+        });
       };
 
       fhs = pkgs.buildFHSEnv {
@@ -76,6 +86,10 @@
       packages = {
         default = zathura-images;
         inherit zathura-images;
+      };
+      overlay = {
+        default = zathura-images-overlay;
+        zathura-images-overlay = zathura-images-overlay;
       };
 
       devShells.default =
