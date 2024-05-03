@@ -36,13 +36,13 @@
 
         nativeBuildInputs = with pkgs; [
           pkg-config
+          # - [river.nix nixpkgs](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/window-managers/river/default.nix#L41)
           unstable.zig_0_12.hook
           unstable.zathura
 
           pango
           cairo
           girara
-          # za
 
           # opencv
           imagemagick
