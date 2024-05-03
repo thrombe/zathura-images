@@ -95,7 +95,7 @@
         default = zathura-images;
         inherit zathura-images;
       };
-      overlay = {
+      overlays = {
         default = zathura-images-overlay;
         zathura-images-overlay = zathura-images-overlay;
       };
