@@ -299,6 +299,6 @@ export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
         .page_init = &plugin_page_init,
         // .page_clear = ,
         .page_render_cairo = &plugin_page_render_cairo,
-        .page_render = &plugin_page_render,
+        // .page_render = &plugin_page_render,
     },
 };
