@@ -32,7 +32,7 @@ export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
     .mime_types_size = mime_types.len,
     .functions = .{
         .document_open = &plugin_open,
-        // .document_free = ,
+        .document_free = &plugin_document_free,
         // .document_get_information = &plugin_get_information,
         .page_init = &plugin_page_init,
         // .page_clear = ,
@@ -134,7 +134,6 @@ fn plugin_page_init(page: ?*zathura.zathura_page_t) callconv(.C) zathura.zathura
     const height = magick.MagickGetImageHeight(state.wand);
     _ = magick.MagickRemoveImage(state.wand);
 
-    std.debug.print("page: {*}, width: {}, height: {}, path: {s}\n", .{ page, width, height, path });
     // zathura.zathura_page_set_data(page, state);
     zathura.zathura_page_set_width(page, @floatFromInt(width));
     zathura.zathura_page_set_height(page, @floatFromInt(height));
@@ -212,7 +211,7 @@ const State = struct {
 
     fn deinit(self: *Self) void {
         self.dir.close();
-        self.opened.close();
+        self.files.deinit();
         _ = magick.DestroyMagickWand(self.wand);
         _ = magick.DestroyPixelWand(self.pwand);
     }
@@ -231,6 +230,13 @@ fn plugin_open(doc: ?*zathura.zathura_document_t) callconv(.C) zathura.zathura_e
     zathura.zathura_document_set_data(doc, state);
 
     zathura.zathura_document_set_number_of_pages(doc, @intCast(state.files.items.len));
+    return zathura.ZATHURA_ERROR_OK;
+}
+
+fn plugin_document_free(doc: ?*zathura.zathura_document_t, data: ?*anyopaque) callconv(.C) zathura.zathura_error_t {
+    _ = doc;
+    var state: *State = @ptrCast(@alignCast(data orelse return zathura.ZATHURA_ERROR_UNKNOWN));
+    state.deinit();
     return zathura.ZATHURA_ERROR_OK;
 }
 
