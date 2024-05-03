@@ -41,36 +41,65 @@ export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
 };
 
 fn plugin_page_render_cairo(page: ?*zathura.zathura_page_t, data: ?*anyopaque, context: ?*zathura.cairo_t, printing: bool) callconv(.C) zathura.zathura_error_t {
+    const err = zathura.ZATHURA_ERROR_UNKNOWN;
+    _ = data;
     _ = printing;
-    _ = data; // nullptr??
     const doc = zathura.zathura_page_get_document(page);
     const surface = zathura.cairo_get_target(context);
 
     const surface_width: usize = @intCast(zathura.cairo_image_surface_get_width(surface));
     const surface_height: usize = @intCast(zathura.cairo_image_surface_get_height(surface));
 
+    const page_width: i32 = @intFromFloat(zathura.zathura_page_get_width(page));
+    const page_height: i32 = @intFromFloat(zathura.zathura_page_get_height(page));
+
     const image = zathura.cairo_image_surface_get_data(surface);
 
+    // const state: *State = @ptrCast(@alignCast(data orelse return err));
     const state: *State = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
 
-    std.debug.print("page render {}\n", .{magick.MagickGetNumberImages(state.wand)});
+    std.debug.print("page render {*} {} {} {} {}\n", .{ page, surface_width, surface_height, page_width, page_height });
 
     // _ = magick.MagickNextImage(state.wand);
     const index = zathura.zathura_page_get_index(page);
-    const stat = magick.MagickReadImage(state.wand, state.files.items[index].ptr);
-    if (stat == magick.MagickFalse) {
-        std.debug.print("could not read image", .{});
-        return zathura.ZATHURA_ERROR_UNKNOWN;
-    }
 
     const wand = magick.CloneMagickWand(state.wand);
-    _ = magick.MagickRemoveImage(state.wand);
     defer _ = magick.DestroyMagickWand(wand);
-    _ = magick.MagickResizeImage(wand, @intCast(surface_width), @intCast(surface_height), magick.TriangleFilter);
+    const pwand = magick.NewPixelWand();
+    defer _ = magick.DestroyPixelWand(pwand);
+    var s = magick.PixelSetColor(pwand, "#28282800");
+    if (s == magick.MagickFalse) {
+        std.debug.print("could not read image\n", .{});
+        return err;
+    }
+    s = magick.MagickSetBackgroundColor(wand, pwand);
+    if (s == magick.MagickFalse) {
+        std.debug.print("could not read image\n", .{});
+        return err;
+    }
+    const stat = magick.MagickReadImage(wand, state.files.items[index].ptr);
+    if (stat == magick.MagickFalse) {
+        std.debug.print("could not read image", .{});
+        return err;
+    }
+    // _ = magick.MagickResizeImage(wand, @intCast(surface_width), @intCast(surface_height), magick.TriangleFilter);
+    // _ = magick.MagickSampleImage(wand, @intCast(surface_width), @intCast(surface_height));
+    // _ = magick.MagickScaleImage(wand, @intCast(surface_width), @intCast(surface_height));
+    _ = magick.MagickExtentImage(wand, surface_width, surface_height, 0, 0);
     const ret = magick.MagickExportImagePixels(wand, 0, 0, surface_width, surface_height, "BGRA", magick.CharPixel, image);
     if (ret == magick.MagickFalse) {
-        return zathura.ZATHURA_ERROR_UNKNOWN;
+        return err;
     }
+
+    // HUH: ? transparency does not work?
+    // for (0..surface_height) |y| {
+    //     for (0..surface_width) |x| {
+    //         image[(y * surface_width + x) * 4] = 0;
+    //         image[(y * surface_width + x) * 4 + 1] = 0;
+    //         image[(y * surface_width + x) * 4 + 2] = 0;
+    //         image[(y * surface_width + x) * 4 + 3] = 255;
+    //     }
+    // }
 
     return zathura.ZATHURA_ERROR_OK;
 }
@@ -92,6 +121,7 @@ fn plugin_page_init(page: ?*zathura.zathura_page_t) callconv(.C) zathura.zathura
     _ = magick.MagickRemoveImage(state.wand);
 
     std.debug.print("page: {*}, width: {}, height: {}, path: {s}\n", .{ page, width, height, path });
+    // zathura.zathura_page_set_data(page, state);
     zathura.zathura_page_set_width(page, @floatFromInt(width));
     zathura.zathura_page_set_height(page, @floatFromInt(height));
 
