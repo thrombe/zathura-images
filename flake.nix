@@ -32,9 +32,11 @@
       zathura-images = pkgs.stdenv.mkDerivation {
         name = "zathura-images";
 
+        src = pkgs.lib.cleanSource ./.;
+
         nativeBuildInputs = with pkgs; [
           pkg-config
-          unstable.zig_0_12
+          unstable.zig_0_12.hook
           unstable.zathura
 
           pango
