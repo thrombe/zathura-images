@@ -137,6 +137,8 @@ fn plugin_page_init(page: ?*zathura.zathura_page_t) callconv(.C) zathura.zathura
     }
     const width = magick.MagickGetImageWidth(state.wand);
     const height = magick.MagickGetImageHeight(state.wand);
+    // const width = 1000;
+    // const height = 1000;
     _ = magick.MagickRemoveImage(state.wand);
 
     // zathura.zathura_page_set_data(page, state);
@@ -171,6 +173,14 @@ fn plugin_page_render_cairo(page: ?*zathura.zathura_page_t, data: ?*anyopaque, c
     const surface_width: usize = @intCast(zathura.cairo_image_surface_get_width(surface));
     const surface_height: usize = @intCast(zathura.cairo_image_surface_get_height(surface));
     const surface_ratio: f32 = @as(f32, @floatFromInt(surface_width)) / @as(f32, @floatFromInt(surface_height));
+
+    // just because of extremely high memory consumption.
+    // zathura won't allow me to limit the zoom
+    // it won't allow me to render just parts of image.
+    // so i have to scale the entire thing to ridiculous sizes
+    if (@max(surface_width, surface_height) > 10_000) {
+        return err;
+    }
 
     // const page_width: usize = @intFromFloat(zathura.zathura_page_get_width(page));
     // const page_height: usize = @intFromFloat(zathura.zathura_page_get_height(page));
