@@ -45,49 +45,63 @@ fn plugin_page_render_cairo(page: ?*zathura.zathura_page_t, data: ?*anyopaque, c
     _ = data;
     _ = printing;
     const doc = zathura.zathura_page_get_document(page);
+    // const state: *State = @ptrCast(@alignCast(data orelse return err));
+    const state: *State = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
     const surface = zathura.cairo_get_target(context);
+
+    const index = zathura.zathura_page_get_index(page);
 
     const surface_width: usize = @intCast(zathura.cairo_image_surface_get_width(surface));
     const surface_height: usize = @intCast(zathura.cairo_image_surface_get_height(surface));
+    const surface_ratio: f32 = @as(f32, @floatFromInt(surface_width)) / @as(f32, @floatFromInt(surface_height));
 
-    const page_width: i32 = @intFromFloat(zathura.zathura_page_get_width(page));
-    const page_height: i32 = @intFromFloat(zathura.zathura_page_get_height(page));
-
-    const image = zathura.cairo_image_surface_get_data(surface);
-
-    // const state: *State = @ptrCast(@alignCast(data orelse return err));
-    const state: *State = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
-
-    std.debug.print("page render {*} {} {} {} {}\n", .{ page, surface_width, surface_height, page_width, page_height });
-
-    // _ = magick.MagickNextImage(state.wand);
-    const index = zathura.zathura_page_get_index(page);
+    // const page_width: usize = @intFromFloat(zathura.zathura_page_get_width(page));
+    // const page_height: usize = @intFromFloat(zathura.zathura_page_get_height(page));
 
     const wand = magick.CloneMagickWand(state.wand);
     defer _ = magick.DestroyMagickWand(wand);
-    const pwand = magick.NewPixelWand();
-    defer _ = magick.DestroyPixelWand(pwand);
-    var s = magick.PixelSetColor(pwand, "#28282800");
-    if (s == magick.MagickFalse) {
+    if (magick.MagickReadImage(wand, state.files.items[index].ptr) == magick.MagickFalse) {
         std.debug.print("could not read image\n", .{});
         return err;
     }
-    s = magick.MagickSetBackgroundColor(wand, pwand);
-    if (s == magick.MagickFalse) {
-        std.debug.print("could not read image\n", .{});
-        return err;
+
+    const img_width = magick.MagickGetImageWidth(wand);
+    const img_height = magick.MagickGetImageHeight(wand);
+    const img_ratio: f32 = @as(f32, @floatFromInt(img_width)) / @as(f32, @floatFromInt(img_height));
+
+    var width: usize = undefined;
+    var height: usize = undefined;
+    var xoff: isize = 0;
+    var yoff: isize = 0;
+
+    if (img_ratio > surface_ratio) {
+        const surface_to_img_ratio = @as(f32, @floatFromInt(surface_width)) / @as(f32, @floatFromInt(img_width));
+        height = @intFromFloat(surface_to_img_ratio * @as(f32, @floatFromInt(img_height)));
+        width = surface_width;
+        yoff = @intCast((surface_height - height) / 2);
+    } else {
+        const surface_to_img_ratio = @as(f32, @floatFromInt(surface_height)) / @as(f32, @floatFromInt(img_height));
+        width = @intFromFloat(surface_to_img_ratio * @as(f32, @floatFromInt(img_width)));
+        height = surface_height;
+        xoff = @intCast((surface_width - width) / 2);
     }
-    const stat = magick.MagickReadImage(wand, state.files.items[index].ptr);
-    if (stat == magick.MagickFalse) {
-        std.debug.print("could not read image", .{});
-        return err;
-    }
-    // _ = magick.MagickResizeImage(wand, @intCast(surface_width), @intCast(surface_height), magick.TriangleFilter);
-    // _ = magick.MagickSampleImage(wand, @intCast(surface_width), @intCast(surface_height));
-    // _ = magick.MagickScaleImage(wand, @intCast(surface_width), @intCast(surface_height));
-    _ = magick.MagickExtentImage(wand, surface_width, surface_height, 0, 0);
-    const ret = magick.MagickExportImagePixels(wand, 0, 0, surface_width, surface_height, "BGRA", magick.CharPixel, image);
-    if (ret == magick.MagickFalse) {
+
+    // _ = magick.MagickResizeImage(wand, surface_width, surface_height, magick.TriangleFilter);
+    // _ = magick.MagickSampleImage(wand, surface_width, surface_height));
+    _ = magick.MagickScaleImage(wand, width, height);
+    _ = magick.MagickExtentImage(wand, surface_width, surface_height, -xoff, -yoff);
+
+    const image = zathura.cairo_image_surface_get_data(surface);
+    if (magick.MagickExportImagePixels(
+        wand,
+        0,
+        0,
+        surface_width,
+        surface_height,
+        "BGRA",
+        magick.CharPixel,
+        image,
+    ) == magick.MagickFalse) {
         return err;
     }
 
@@ -137,6 +151,7 @@ const State = struct {
     opened: usize,
 
     wand: *magick.MagickWand,
+    pwand: *magick.PixelWand,
 
     fn new(_path: [*:0]const u8) !Self {
         const path_strlen = c_std.strlen(_path);
@@ -176,18 +191,30 @@ const State = struct {
         const wand = magick.NewMagickWand() orelse {
             return error.CouldNotGetWand;
         };
+        const pwand = magick.NewPixelWand() orelse {
+            return error.CouldNotGetWand;
+        };
+        if (magick.PixelSetColor(pwand, "#28282800") == magick.MagickFalse) {
+            return error.CouldNotSetPWandColor;
+        }
+        if (magick.MagickSetBackgroundColor(wand, pwand) == magick.MagickFalse) {
+            return error.CouldNotSetBgColor;
+        }
 
         return .{
             .dir = dir,
             .files = files,
             .opened = 0,
             .wand = wand,
+            .pwand = pwand,
         };
     }
 
     fn deinit(self: *Self) void {
         self.dir.close();
         self.opened.close();
+        _ = magick.DestroyMagickWand(self.wand);
+        _ = magick.DestroyPixelWand(self.pwand);
     }
 };
 
