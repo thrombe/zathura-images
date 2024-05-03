@@ -1,5 +1,8 @@
 const std = @import("std");
 
+var allocator = std.heap.GeneralPurposeAllocator(.{}){};
+var alloc = allocator.allocator();
+
 const c_std = @cImport({
     @cInclude("string.h");
 });
@@ -71,6 +74,69 @@ fn plugin_page_init(page: ?*zathura.zathura_page_t) callconv(.C) zathura.zathura
 
     return zathura.ZATHURA_ERROR_OK;
 }
+
+const State = struct {
+    const Self = @This();
+    const PathArray = std.ArrayList([]const u8);
+
+    dir: std.fs.Dir,
+    files: PathArray,
+    opened: usize,
+
+    wand: *magick.MagickWand,
+
+    fn new(_path: [*:0]const u8) !Self {
+        const path_strlen = c_std.strlen(_path);
+        var path = _path[0..path_strlen];
+        const cwd = std.fs.cwd();
+        const fod = try cwd.openFile(path, .{});
+        defer fod.close();
+        const stat = try fod.stat();
+
+        var dir: std.fs.Dir = undefined;
+        var files = PathArray.init(alloc);
+        switch (stat.kind) {
+            .directory => {
+                dir = try cwd.openDir(path, .{ .iterate = true });
+            },
+            else => {
+                const dirpath = std.fs.path.dirname(path) orelse unreachable;
+                dir = try cwd.openDir(dirpath, .{ .iterate = true });
+                path = dirpath;
+            },
+        }
+        var iter = dir.iterate();
+        while (try iter.next()) |p| {
+            switch (p.kind) {
+                .file => {
+                    if (std.mem.eql(u8, std.fs.path.extension(p.name), ".png")) {
+                        const path_parts: [2][]const u8 = .{ path, p.name };
+                        const joined_path = try std.fs.path.joinZ(alloc, path_parts[0..]);
+                        try files.append(joined_path);
+                    }
+                },
+                else => {},
+            }
+        }
+
+        magick.MagickWandGenesis();
+        const wand = magick.NewMagickWand() orelse {
+            return error.CouldNotGetWand;
+        };
+
+        return .{
+            .dir = dir,
+            .files = files,
+            .opened = 0,
+            .wand = wand,
+        };
+    }
+
+    fn deinit(self: *Self) void {
+        self.dir.close();
+        self.opened.close();
+    }
+};
 
 fn plugin_open(doc: ?*zathura.zathura_document_t) callconv(.C) zathura.zathura_error_t {
     if (doc == null) {
