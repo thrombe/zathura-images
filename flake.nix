@@ -29,63 +29,6 @@
         ];
       };
 
-      za = with pkgs.unstable; stdenv.mkDerivation (finalAttrs: {
-          pname = "zathura";
-          version = "0.5.5";
-
-          src = fetchFromGitLab {
-            domain = "git.pwmt.org";
-            owner = "pwmt";
-            repo = "zathura";
-            rev = finalAttrs.version;
-            hash = "sha256-mHEYqgBB55p8nykFtvYtP5bWexp/IqFbeLs7gZmXCeE=";
-          };
-
-          outputs = ["bin" "man" "dev" "out" "lib"];
-
-          # Flag list:
-          # https://github.com/pwmt/zathura/blob/master/meson_options.txt
-          mesonFlags = [
-            "-Dmanpages=enabled"
-            "-Dconvert-icon=enabled"
-            "-Dsynctex=enabled"
-            "-Dtests=disabled"
-            # Make sure tests are enabled for doCheck
-            # (lib.mesonEnable "tests" finalAttrs.finalPackage.doCheck)
-            (lib.mesonEnable "seccomp" stdenv.hostPlatform.isLinux)
-          ];
-
-          nativeBuildInputs = [
-            meson
-            ninja
-            pkg-config
-            desktop-file-utils
-            python3.pythonOnBuildForHost.pkgs.sphinx
-            gettext
-            wrapGAppsHook
-            libxml2
-            appstream-glib
-          ];
-
-          buildInputs =
-            [
-              gtk4
-              girara
-              libintl
-              sqlite
-              glib
-              file
-              librsvg
-              check
-              json-glib
-              texlive.bin.core
-            ]
-            ++ lib.optional stdenv.isLinux libseccomp
-            ++ lib.optional stdenv.isDarwin gtk-mac-integration;
-
-          doCheck = !stdenv.isDarwin;
-        });
-
       zathura-images = pkgs.stdenv.mkDerivation {
         name = "zathura-images";
 
