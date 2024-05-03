@@ -61,6 +61,7 @@
           pkgs.unstable.zig_0_12.hook
         ] ++ packages_without_hook;
       };
+      # - [Overriding | nixpkgs](https://ryantm.github.io/nixpkgs/using/overrides/)
       zathura-images-overlay = self: super: {
         zathura = super.zathura.override (prev: {
           plugins = (prev.plugins or []) ++ [zathura-images];
