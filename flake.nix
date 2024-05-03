@@ -37,6 +37,11 @@
         installPhase = ''
           mkdir -p $out/lib/zathura
           mv ./zig-out/lib/lib${name}.so $out/lib/zathura/.
+
+          mkdir -p $out/share/applications
+          cp ./meta/*.desktop $out/share/applications/.
+          mkdir -p $out/share/metainfo
+          cp ./meta/*.metainfo.xml $out/share/metainfo/.
         '';
 
         nativeBuildInputs = with pkgs; [

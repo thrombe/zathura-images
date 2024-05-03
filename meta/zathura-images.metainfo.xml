@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="addon">
+  <id>zathura-images</id>
+  <project_license>MIT</project_license>
+  <extends>org.pwmt.zathura</extends>
+  <name>zathura-images</name>
+  <summary>Image plugin for zathura</summary>
+  <url type="homepage">https://github.com/thrombe/zathura-images/</url>
+</component>

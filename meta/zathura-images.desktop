@@ -1,0 +1,8 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Zathura
+Exec=zathura %U
+Terminal=false
+NoDisplay=true
+MimeType=image/jpeg;image/png;inode/directory;
