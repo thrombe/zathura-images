@@ -289,7 +289,19 @@ fn plugin_page_render(page: ?*zathura.zathura_page_t, data: ?*anyopaque, _z_err:
     return image;
 }
 
-const mime_types = [_][*c]const u8{ "image/jpeg", "image/png", "inode/directory" };
+const mime_types = [_][*c]const u8{
+    "image/jpeg",
+    "image/png",
+    "inode/directory",
+    "image/avif",
+    "image/heif",
+    "image/bmp",
+    "image/x-icns",
+    "image/x-ico",
+    "image/tiff",
+    "image/x-webp",
+    "image/webp",
+};
 export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
     .name = "zathura-images",
     .version = .{ .rev = 1, .minor = 0, .major = 0 },
