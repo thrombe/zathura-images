@@ -26,35 +26,18 @@ const zathura = @cImport({
 
 const State = struct {
     const Self = @This();
-    const PathArray = std.ArrayList([]const u8);
+    const PathArray = std.ArrayList([:0]const u8);
 
-    dir: std.fs.Dir,
     files: PathArray,
     opened: usize,
 
     wand: *magick.MagickWand,
     pwand: *magick.PixelWand,
 
-    fn new(_path: [*:0]const u8) !Self {
-        const path_strlen = c_std.strlen(_path);
-        var path = _path[0..path_strlen];
-        const cwd = std.fs.cwd();
-        const fod = try cwd.openFile(path, .{});
-        defer fod.close();
-        const stat = try fod.stat();
-
-        var dir: std.fs.Dir = undefined;
+    fn grab_files(path: []const u8) !PathArray {
+        const dir = try std.fs.cwd().openDir(path, .{ .iterate = true });
         var files = PathArray.init(alloc);
-        switch (stat.kind) {
-            .directory => {
-                dir = try cwd.openDir(path, .{ .iterate = true });
-            },
-            else => {
-                const dirpath = std.fs.path.dirname(path) orelse unreachable;
-                dir = try cwd.openDir(dirpath, .{ .iterate = true });
-                path = dirpath;
-            },
-        }
+        errdefer files.deinit();
         var iter = dir.iterate();
         while (try iter.next()) |p| {
             switch (p.kind) {
@@ -67,6 +50,25 @@ const State = struct {
                 },
                 else => {},
             }
+        }
+        return files;
+    }
+
+    fn new(path: []const u8) !Self {
+        const fod = try std.fs.cwd().openFile(path, .{});
+        defer fod.close();
+        const stat = try fod.stat();
+
+        var files: PathArray = undefined;
+        switch (stat.kind) {
+            .directory => {
+                files = try grab_files(path);
+            },
+            else => {
+                // const dirpath = std.fs.path.dirname(path) orelse return error.NoParentToPath;
+                files = PathArray.init(alloc);
+                try files.append(try alloc.dupeZ(u8, path));
+            },
         }
 
         magick.MagickWandGenesis();
@@ -84,7 +86,6 @@ const State = struct {
         }
 
         return .{
-            .dir = dir,
             .files = files,
             .opened = 0,
             .wand = wand,
@@ -93,7 +94,6 @@ const State = struct {
     }
 
     fn deinit(self: *Self) void {
-        self.dir.close();
         for (self.files.items) |f| {
             alloc.free(f);
         }
@@ -161,7 +161,7 @@ fn plugin_open(doc: ?*zathura.zathura_document_t) callconv(.C) zathura.zathura_e
 
     const p = zathura.zathura_document_get_path(doc);
     const state = alloc.create(State) catch return err;
-    state.* = State.new(p) catch unreachable;
+    state.* = State.new(std.mem.span(p)) catch unreachable;
 
     zathura.zathura_document_set_data(doc, state);
 
