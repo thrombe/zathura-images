@@ -94,6 +94,9 @@ const State = struct {
 
     fn deinit(self: *Self) void {
         self.dir.close();
+        for (self.files.items) |f| {
+            alloc.free(f);
+        }
         self.files.deinit();
         _ = magick.DestroyMagickWand(self.wand);
         _ = magick.DestroyPixelWand(self.pwand);
