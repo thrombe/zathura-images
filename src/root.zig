@@ -245,6 +245,84 @@ fn plugin_page_render_cairo(page: ?*zathura.zathura_page_t, data: ?*anyopaque, c
     return zathura.ZATHURA_ERROR_OK;
 }
 
+// when does this even run??
+fn plugin_page_render(page: ?*zathura.zathura_page_t, data: ?*anyopaque, _z_err: ?*zathura.zathura_error_t) callconv(.C) ?*zathura.zathura_image_buffer_t {
+    std.debug.print("hehe printing page\n", .{});
+    const err = zathura.ZATHURA_ERROR_UNKNOWN;
+    const z_err: *zathura.zathura_error_t = @ptrCast(_z_err);
+    _ = data;
+    const doc = zathura.zathura_page_get_document(page);
+    // const state: *State = @ptrCast(@alignCast(data orelse return err));
+    const state: *State = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
+
+    const index = zathura.zathura_page_get_index(page);
+
+    const page_width: usize = @intFromFloat(zathura.zathura_page_get_width(page));
+    const page_height: usize = @intFromFloat(zathura.zathura_page_get_height(page));
+    const page_ratio: f32 = @as(f32, @floatFromInt(page_width)) / @as(f32, @floatFromInt(page_height));
+
+    // just because of extremely high memory consumption.
+    // zathura won't allow me to limit the zoom
+    // it won't allow me to render just parts of image.
+
+    // so i have to scale the entire thing to ridiculous sizes
+    if (@max(page_width, page_height) > 10_000) {
+        z_err.* = err;
+        return null;
+    }
+
+    const wand = magick.CloneMagickWand(state.wand);
+    defer _ = magick.DestroyMagickWand(wand);
+    if (magick.MagickReadImage(wand, state.files.items[index].ptr) == magick.MagickFalse) {
+        std.debug.print("could not read image\n", .{});
+        z_err.* = err;
+        return null;
+    }
+
+    const img_width = magick.MagickGetImageWidth(wand);
+    const img_height = magick.MagickGetImageHeight(wand);
+    const img_ratio: f32 = @as(f32, @floatFromInt(img_width)) / @as(f32, @floatFromInt(img_height));
+
+    var width: usize = undefined;
+    var height: usize = undefined;
+    var xoff: isize = 0;
+    var yoff: isize = 0;
+
+    if (img_ratio > page_ratio) {
+        const page_to_img_ratio = @as(f32, @floatFromInt(page_width)) / @as(f32, @floatFromInt(img_width));
+        height = @intFromFloat(page_to_img_ratio * @as(f32, @floatFromInt(img_height)));
+        width = page_width;
+        yoff = @intCast((page_height - height) / 2);
+    } else {
+        const page_to_img_ratio = @as(f32, @floatFromInt(page_height)) / @as(f32, @floatFromInt(img_height));
+        width = @intFromFloat(page_to_img_ratio * @as(f32, @floatFromInt(img_width)));
+        height = page_height;
+        xoff = @intCast((page_width - width) / 2);
+    }
+
+    // _ = magick.MagickResizeImage(wand, surface_width, surface_height, magick.TriangleFilter);
+    // _ = magick.MagickSampleImage(wand, surface_width, surface_height));
+    _ = magick.MagickScaleImage(wand, width, height);
+    _ = magick.MagickExtentImage(wand, page_width, page_height, -xoff, -yoff);
+
+    const image = zathura.zathura_image_buffer_create(@intCast(page_width), @intCast(page_height));
+    if (magick.MagickExportImagePixels(
+        wand,
+        0,
+        0,
+        page_width,
+        page_height,
+        "BGRA",
+        magick.CharPixel,
+        image,
+    ) == magick.MagickFalse) {
+        zathura.zathura_image_buffer_free(image);
+        z_err.* = err;
+        return null;
+    }
+    return image;
+}
+
 const mime_types = [_][*c]const u8{ "image/jpeg", "image/png", "inode/directory" };
 export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
     .name = "zathura-images",
@@ -258,5 +336,6 @@ export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
         .page_init = &plugin_page_init,
         // .page_clear = ,
         .page_render_cairo = &plugin_page_render_cairo,
+        // .page_render = &plugin_page_render,
     },
 };
