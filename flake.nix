@@ -62,6 +62,9 @@
         zathura = super.zathura.override (prev: {
           plugins = (prev.plugins or []) ++ [zathura-images];
         });
+        # zathura = super.zathura.overrideAttrs (finalAttrs: previousAttrs: {
+        #   paths = previousAttrs.paths ++ [zathura-images];
+        # });
       };
 
       fhs = pkgs.buildFHSEnv {
