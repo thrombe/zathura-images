@@ -24,7 +24,7 @@ const zathura = @cImport({
     @cInclude("zathura/zathura-version.h");
 });
 
-const mime_types = [_][*c]const u8{ "image/jpeg", "image/png" };
+const mime_types = [_][*c]const u8{ "image/jpeg", "image/png", "inode/directory" };
 export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
     .name = "zathura-images",
     .version = .{ .rev = 1, .minor = 0, .major = 0 },
