@@ -291,6 +291,7 @@ fn plugin_page_render(page: ?*zathura.zathura_page_t, data: ?*anyopaque, _z_err:
 
 const mime_types = [_][*c]const u8{
     "image/jpeg",
+    "image/jpg",
     "image/png",
     "inode/directory",
     "image/avif",

@@ -5,4 +5,4 @@ Name=Zathura
 Exec=zathura %U
 Terminal=false
 NoDisplay=true
-MimeType=image/jpeg;image/png;inode/directory;image/avif;image/heif;image/bmp;image/x-icns;image/x-ico;image/tiff;image/x-webp;image/webp;
+MimeType=image/jpeg;image/jpg;image/png;inode/directory;image/avif;image/heif;image/bmp;image/x-icns;image/x-ico;image/tiff;image/x-webp;image/webp;
