@@ -40,7 +40,7 @@
           girara
 
           # opencv
-          imagemagick
+          unstable.imagemagick
       ];
       zathura-images = pkgs.stdenv.mkDerivation rec {
         name = "zathura-images";
