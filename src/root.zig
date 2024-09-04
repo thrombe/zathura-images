@@ -203,13 +203,26 @@ fn plugin_page_init(page: ?*zathura.zathura_page_t) callconv(.C) zathura.zathura
 
 fn plugin_get_information(
     doc: ?*zathura.zathura_document_t,
-    data: ?*void,
+    data: ?*anyopaque,
     err: ?*zathura.zathura_error_t,
 ) callconv(.C) ?*zathura.girara_list_t {
     _ = doc;
     _ = data;
     _ = err;
     return null;
+}
+
+fn plugin_page_label(page: ?*zathura.zathura_page_t, data: ?*anyopaque, label: [*c][*c]u8) callconv(.C) zathura.zathura_error_t {
+    _ = data;
+    const doc = zathura.zathura_page_get_document(page);
+    const state: *State = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
+
+    const index = zathura.zathura_page_get_index(page);
+    const name = std.fs.path.basename(state.files.items[index]);
+    label.* = @ptrCast(zathura.g_try_malloc0(name.len) orelse return zathura.ZATHURA_ERROR_UNKNOWN);
+    std.mem.copyForwards(u8, label.*[0..1024], name);
+
+    return zathura.ZATHURA_ERROR_OK;
 }
 
 fn plugin_page_render_cairo(page: ?*zathura.zathura_page_t, data: ?*anyopaque, context: ?*zathura.cairo_t, printing: bool) callconv(.C) zathura.zathura_error_t {
@@ -313,6 +326,7 @@ export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
         .document_free = &plugin_document_free,
         // .document_get_information = &plugin_get_information,
         .page_init = &plugin_page_init,
+        .page_get_label = &plugin_page_label,
         // .page_clear = ,
         .page_render_cairo = &plugin_page_render_cairo,
         // .page_render = &plugin_page_render,
