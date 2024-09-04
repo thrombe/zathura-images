@@ -30,6 +30,7 @@ const State = struct {
 
     files: PathArray,
     opened: usize,
+    page_synced: bool = false,
 
     wand: *magick.MagickWand,
     pwand: *magick.PixelWand,
@@ -60,14 +61,25 @@ const State = struct {
         const stat = try fod.stat();
 
         var files: PathArray = undefined;
+        var opened: usize = 0;
         switch (stat.kind) {
             .directory => {
                 files = try grab_files(path);
             },
             else => {
-                // const dirpath = std.fs.path.dirname(path) orelse return error.NoParentToPath;
-                files = PathArray.init(alloc);
-                try files.append(try alloc.dupeZ(u8, path));
+                var buf = try alloc.alloc(u8, std.fs.max_path_bytes);
+                defer alloc.free(buf);
+
+                const real_file = try std.fs.realpath(path, buf[0..std.fs.max_path_bytes]);
+                const dirpath = std.fs.path.dirname(real_file) orelse return error.NoParentToPath;
+                files = try grab_files(dirpath);
+
+                for (files.items, 0..) |file, i| {
+                    if (std.mem.eql(u8, file, real_file)) {
+                        opened = i;
+                        break;
+                    }
+                }
             },
         }
 
@@ -87,7 +99,7 @@ const State = struct {
 
         return .{
             .files = files,
-            .opened = 0,
+            .opened = opened,
             .wand = wand,
             .pwand = pwand,
         };
@@ -166,6 +178,9 @@ fn plugin_open(doc: ?*zathura.zathura_document_t) callconv(.C) zathura.zathura_e
     zathura.zathura_document_set_data(doc, state);
 
     zathura.zathura_document_set_number_of_pages(doc, @intCast(state.files.items.len));
+
+    // OOF: unfortunately this is overwritten soon after this function is called from zathura.c
+    // zathura.zathura_document_set_current_page_number(doc, @intCast(state.opened));
     return zathura.ZATHURA_ERROR_OK;
 }
 
@@ -216,6 +231,12 @@ fn plugin_page_label(page: ?*zathura.zathura_page_t, data: ?*anyopaque, label: [
     _ = data;
     const doc = zathura.zathura_page_get_document(page);
     const state: *State = @ptrCast(@alignCast(zathura.zathura_document_get_data(doc)));
+
+    // OOF: hack to bypass zathura's page history system :(
+    if (!state.page_synced) {
+        state.page_synced = true;
+        zathura.zathura_document_set_current_page_number(doc, @intCast(state.opened));
+    }
 
     const index = zathura.zathura_page_get_index(page);
     const name = std.fs.path.basename(state.files.items[index]);
