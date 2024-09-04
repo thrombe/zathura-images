@@ -43,10 +43,14 @@ const State = struct {
         while (try iter.next()) |p| {
             switch (p.kind) {
                 .file => {
-                    if (std.mem.eql(u8, std.fs.path.extension(p.name), ".png")) {
-                        const path_parts: [2][]const u8 = .{ path, p.name };
-                        const joined_path = try std.fs.path.joinZ(alloc, path_parts[0..]);
-                        try files.append(joined_path);
+                    for (extensions) |ext| {
+                        if (std.ascii.eqlIgnoreCase(std.fs.path.extension(p.name), ext)) {
+                            const path_parts: [2][]const u8 = .{ path, p.name };
+                            const joined_path = try std.fs.path.joinZ(alloc, path_parts[0..]);
+                            try files.append(joined_path);
+
+                            break;
+                        }
                     }
                 },
                 else => {},
@@ -323,6 +327,24 @@ fn plugin_page_render(page: ?*zathura.zathura_page_t, data: ?*anyopaque, _z_err:
     return image;
 }
 
+// TODO: all images are read by page_init anyway. maybe just get mime from imagemagic :/
+//       apparently SSDs don't mind reads
+const extensions = [_][]const u8{
+    ".jpg",
+    ".jpeg",
+    ".jfif",
+    ".png",
+    ".avif",
+    ".heif",
+    ".heic",
+    ".bmp",
+    ".icns",
+    ".ico",
+    ".tiff",
+    ".tif",
+    ".webp",
+    // ".gif",
+};
 const mime_types = [_][*c]const u8{
     "image/jpeg",
     "image/jpg",
@@ -336,6 +358,7 @@ const mime_types = [_][*c]const u8{
     "image/tiff",
     "image/x-webp",
     "image/webp",
+    // "image/gif",
 };
 export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
     .name = "zathura-images",
