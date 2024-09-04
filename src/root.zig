@@ -65,7 +65,7 @@ const State = struct {
         const stat = try fod.stat();
 
         var files: PathArray = undefined;
-        var opened: usize = 0;
+        var opened: ?usize = null;
         switch (stat.kind) {
             .directory => {
                 files = try grab_files(path);
@@ -83,6 +83,12 @@ const State = struct {
                         opened = i;
                         break;
                     }
+                }
+
+                if (opened == null) {
+                    const stderr = std.io.getStdErr().writer();
+                    try stderr.print("file type '{s}' not supported", .{std.fs.path.extension(path)});
+                    return error.FileTypeNotSupported;
                 }
             },
         }
@@ -103,7 +109,7 @@ const State = struct {
 
         return .{
             .files = files,
-            .opened = opened,
+            .opened = opened orelse 0,
             .wand = wand,
             .pwand = pwand,
         };
@@ -177,7 +183,7 @@ fn plugin_open(doc: ?*zathura.zathura_document_t) callconv(.C) zathura.zathura_e
 
     const p = zathura.zathura_document_get_path(doc);
     const state = alloc.create(State) catch return err;
-    state.* = State.new(std.mem.span(p)) catch unreachable;
+    state.* = State.new(std.mem.span(p)) catch return err;
 
     zathura.zathura_document_set_data(doc, state);
 
