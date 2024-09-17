@@ -2,7 +2,7 @@
   description = "yaaaaaaaaaaaaaaaaaaaaa";
 
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-23.11";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
 
@@ -32,7 +32,7 @@
       packages_without_hook = with pkgs; [
           pkg-config
           # - [river.nix nixpkgs](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/window-managers/river/default.nix#L41)
-          unstable.zig_0_12
+          zig
           unstable.zathura
 
           pango
@@ -58,7 +58,7 @@
         '';
 
         nativeBuildInputs = [
-          pkgs.unstable.zig_0_12.hook
+          pkgs.zig.hook
         ] ++ packages_without_hook;
       };
       # - [Overriding | nixpkgs](https://ryantm.github.io/nixpkgs/using/overrides/)
