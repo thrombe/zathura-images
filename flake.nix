@@ -33,14 +33,14 @@
           pkg-config
           # - [river.nix nixpkgs](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/window-managers/river/default.nix#L41)
           zig
-          unstable.zathura
+          zathura
 
           pango
           cairo
           girara
 
           # opencv
-          unstable.imagemagick
+          imagemagick
       ];
       zathura-images = pkgs.stdenv.mkDerivation rec {
         name = "zathura-images";
@@ -114,7 +114,7 @@
           ];
           shellHook = ''
             export PROJECT_ROOT="$(pwd)"
-            export LIBCLANG_PATH="${pkgs.unstable.llvmPackages.libclang.lib}/lib";
+            export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib";
             export CLANGD_FLAGS="--compile-commands-dir=$PROJECT_ROOT/plugin --query-driver=$(which $CXX)"
           '';
         };
