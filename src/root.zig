@@ -56,6 +56,14 @@ const State = struct {
                 else => {},
             }
         }
+
+        const Comparator = struct {
+            fn lessThan(_: void, a: []const u8, b: []const u8) bool {
+                return std.mem.order(u8, a, b) == std.math.Order.lt;
+            }
+        };
+        std.sort.pdq([]const u8, files.items, {}, Comparator.lessThan);
+
         return files;
     }
 
