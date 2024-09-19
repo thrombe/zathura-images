@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
-    nixpkgs-unstable.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
 
     zls = {
@@ -20,13 +19,6 @@
 
       pkgs = import inputs.nixpkgs {
         inherit system;
-        overlays = [
-          (final: prev: {
-            unstable = import inputs.nixpkgs-unstable {
-              inherit system;
-            };
-          })
-        ];
       };
 
       packages_without_hook = with pkgs; [
