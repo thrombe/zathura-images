@@ -1,5 +1,7 @@
 /target
 /.direnv
 /zig-cache
+/.zig-cache
 /zig-out
 /result
+/zathura

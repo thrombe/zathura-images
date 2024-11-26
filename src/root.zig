@@ -234,6 +234,12 @@ fn plugin_page_init(page: ?*zathura.zathura_page_t) callconv(.C) zathura.zathura
     return zathura.ZATHURA_ERROR_OK;
 }
 
+fn plugin_page_clear(page: ?*zathura.zathura_page_t, huh: ?*anyopaque) callconv(.C) zathura.zathura_error_t {
+    _ = page;
+    _ = huh;
+    return zathura.ZATHURA_ERROR_OK;
+}
+
 fn plugin_get_information(
     doc: ?*zathura.zathura_document_t,
     data: ?*anyopaque,
@@ -374,7 +380,7 @@ const mime_types = [_][*c]const u8{
     "image/webp",
     // "image/gif",
 };
-export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
+export const zathura_plugin_6_7 = zathura.zathura_plugin_definition_t{
     .name = "zathura-images",
     .version = .{ .rev = 1, .minor = 0, .major = 0 },
     .mime_types = @constCast(mime_types[0..mime_types.len].ptr),
@@ -384,8 +390,8 @@ export const zathura_plugin_5_6 = zathura.zathura_plugin_definition_t{
         .document_free = &plugin_document_free,
         // .document_get_information = &plugin_get_information,
         .page_init = &plugin_page_init,
+        .page_clear = &plugin_page_clear,
         .page_get_label = &plugin_page_label,
-        // .page_clear = ,
         .page_render_cairo = &plugin_page_render_cairo,
         // .page_render = &plugin_page_render,
     },
