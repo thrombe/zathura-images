@@ -61,17 +61,36 @@
         # });
 
         # - [zathura nixpkgs](https://github.com/NixOS/nixpkgs/blob/e2605d0744c2417b09f8bf850dfca42fcf537d34/pkgs/applications/misc/zathura/wrapper.nix#L39)
-        zathura = pkgs.symlinkJoin {
-          name = "${super.zathura.name}-with-zathura-images";
-          nativeBuildInputs = [ pkgs.makeWrapper ];
+        # this works, but default plugins break everything
+        #   - [zathura-bc](https://github.com/pwmt/zathura-cb/blob/8071728ee16215f41b535e65fef5ebe774fab15a/zathura-cb/plugin.c#L23)
+        # zathura = pkgs.symlinkJoin {
+        #   name = "${super.zathura.name}-with-zathura-images";
+        #   nativeBuildInputs = [ pkgs.makeWrapper ];
 
-          paths = [zathura-images];
+        #   paths = [zathura-images];
 
-          postBuild = ''
-            makeWrapper ${super.zathura}/bin/zathura $out/bin/zathura \
-              --prefix ZATHURA_PLUGINS_PATH : "$out/lib/zathura"
-          '';
-        };
+        #   postBuild = ''
+        #     makeWrapper ${super.zathura}/bin/zathura $out/bin/zathura \
+        #       --prefix ZATHURA_PLUGINS_PATH : "$out/lib/zathura"
+        #   '';
+        # };
+
+        # default plugins include zathura_cb. which overrides inode/directory but does not render properly
+        # so i have to specify zathura-images before it
+        zathura = super.zathura.override (prev: {
+          # - [](https://github.com/NixOS/nixpkgs/blob/3dc8993b21cf1be360547f24e580ccbc351b7e0f/pkgs/applications/misc/zathura/wrapper.nix#L13-L18)
+          plugins = [
+            zathura-images
+            prev.zathura_cb
+            prev.zathura_djvu
+            prev.zathura_ps
+            (
+              if prev.useMupdf
+              then prev.zathura_pdf_mupdf
+              else prev.zathura_pdf_poppler
+            )
+          ];
+        });
       };
 
       fhs = pkgs.buildFHSEnv {
