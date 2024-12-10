@@ -79,25 +79,32 @@ const State = struct {
                 files = try grab_files(path);
             },
             else => {
-                var buf = try alloc.alloc(u8, std.fs.max_path_bytes);
-                defer alloc.free(buf);
+                // FIXME:
+                // calling zathura.zathura_document_set_current_page_number does not do anything
+                // so i can't change the cached page number and now i need to undo a feature
+                files = PathArray.init(alloc);
+                try files.append(try alloc.dupeZ(u8, path));
+                opened = 0;
 
-                const real_file = try std.fs.realpath(path, buf[0..std.fs.max_path_bytes]);
-                const dirpath = std.fs.path.dirname(real_file) orelse return error.NoParentToPath;
-                files = try grab_files(dirpath);
+                // var buf = try alloc.alloc(u8, std.fs.max_path_bytes);
+                // defer alloc.free(buf);
 
-                for (files.items, 0..) |file, i| {
-                    if (std.mem.eql(u8, file, real_file)) {
-                        opened = i;
-                        break;
-                    }
-                }
+                // const real_file = try std.fs.realpath(path, buf[0..std.fs.max_path_bytes]);
+                // const dirpath = std.fs.path.dirname(real_file) orelse return error.NoParentToPath;
+                // files = try grab_files(dirpath);
 
-                if (opened == null) {
-                    const stderr = std.io.getStdErr().writer();
-                    try stderr.print("file type '{s}' not supported", .{std.fs.path.extension(path)});
-                    return error.FileTypeNotSupported;
-                }
+                // for (files.items, 0..) |file, i| {
+                //     if (std.mem.eql(u8, file, real_file)) {
+                //         opened = i;
+                //         break;
+                //     }
+                // }
+
+                // if (opened == null) {
+                //     const stderr = std.io.getStdErr().writer();
+                //     try stderr.print("file type '{s}' not supported", .{std.fs.path.extension(path)});
+                //     return error.FileTypeNotSupported;
+                // }
             },
         }
 
