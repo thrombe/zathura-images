@@ -22,17 +22,17 @@
       };
 
       packages_without_hook = with pkgs; [
-          pkg-config
-          # - [river.nix nixpkgs](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/window-managers/river/default.nix#L41)
-          zig_0_12
-          zathura
+        pkg-config
+        # - [river.nix nixpkgs](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/window-managers/river/default.nix#L41)
+        zig_0_12
+        zathura
 
-          pango
-          cairo
-          girara
+        pango
+        cairo
+        girara
 
-          # opencv
-          imagemagick
+        # opencv
+        imagemagick
       ];
       zathura-images = pkgs.stdenv.mkDerivation rec {
         name = "zathura-images";
@@ -49,9 +49,11 @@
           cp ./meta/*.metainfo.xml $out/share/metainfo/.
         '';
 
-        nativeBuildInputs = [
-          pkgs.zig_0_12.hook
-        ] ++ packages_without_hook;
+        nativeBuildInputs =
+          [
+            pkgs.zig_0_12.hook
+          ]
+          ++ packages_without_hook;
       };
       # - [Overriding | nixpkgs](https://ryantm.github.io/nixpkgs/using/overrides/)
       zathura-images-overlay = self: super: {
