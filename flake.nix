@@ -55,12 +55,23 @@
       };
       # - [Overriding | nixpkgs](https://ryantm.github.io/nixpkgs/using/overrides/)
       zathura-images-overlay = self: super: {
-        zathura = super.zathura.override (prev: {
-          plugins = (prev.plugins or []) ++ [zathura-images];
-        });
-        # zathura = super.zathura.overrideAttrs (finalAttrs: previousAttrs: {
-        #   paths = previousAttrs.paths ++ [zathura-images];
+        # - [this overlay broke](https://github.com/NixOS/nixpkgs/commit/3dc8993b21cf1be360547f24e580ccbc351b7e0f)
+        # zathura = super.zathura.override (prev: {
+        #   plugins = (prev.plugins or []) ++ [zathura-images];
         # });
+
+        # - [zathura nixpkgs](https://github.com/NixOS/nixpkgs/blob/e2605d0744c2417b09f8bf850dfca42fcf537d34/pkgs/applications/misc/zathura/wrapper.nix#L39)
+        zathura = pkgs.symlinkJoin {
+          name = "${super.zathura.name}-with-zathura-images";
+          nativeBuildInputs = [ pkgs.makeWrapper ];
+
+          paths = [zathura-images];
+
+          postBuild = ''
+            makeWrapper ${super.zathura}/bin/zathura $out/bin/zathura \
+              --prefix ZATHURA_PLUGINS_PATH : "$out/lib/zathura"
+          '';
+        };
       };
 
       fhs = pkgs.buildFHSEnv {
@@ -81,6 +92,12 @@
           [
             # unstable.zls
             (flakeDefaultPackage inputs.zls)
+            (import inputs.nixpkgs {
+              overlays = [zathura-images-overlay];
+              inherit system;
+            })
+            .zathura
+            # zathura
           ]
           ++ (custom-commands pkgs);
 
