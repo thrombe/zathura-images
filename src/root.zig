@@ -62,7 +62,7 @@ const State = struct {
                 return std.mem.order(u8, a, b) == std.math.Order.lt;
             }
         };
-        std.sort.pdq([]const u8, files.items, {}, Comparator.lessThan);
+        std.sort.pdq([:0]const u8, files.items, {}, Comparator.lessThan);
 
         return files;
     }
@@ -387,7 +387,13 @@ const mime_types = [_][*c]const u8{
     "image/webp",
     // "image/gif",
 };
-export const zathura_plugin_6_7 = zathura.zathura_plugin_definition_t{
+
+// https://ziglang.org/documentation/0.11.0/#export
+comptime {
+    @export(&zathura_plugin, .{ .name = std.fmt.comptimePrint("zathura_plugin_{d}_{d}", .{ zathura.ZATHURA_API_VERSION, zathura.ZATHURA_ABI_VERSION }), .linkage = .strong });
+}
+
+var zathura_plugin = zathura.zathura_plugin_definition_t{
     .name = "zathura-images",
     .version = .{ .rev = 1, .minor = 0, .major = 0 },
     .mime_types = @constCast(mime_types[0..mime_types.len].ptr),

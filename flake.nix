@@ -4,12 +4,6 @@
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
-
-    zls = {
-      url = "github:zigtools/zls/0.12.0";
-      inputs.nixpkgs.follows = "nixpkgs";
-      inputs.flake-utils.follows = "flake-utils";
-    };
   };
 
   outputs = inputs:
@@ -24,7 +18,7 @@
       packages_without_hook = with pkgs; [
         pkg-config
         # - [river.nix nixpkgs](https://github.com/NixOS/nixpkgs/blob/nixos-unstable/pkgs/applications/window-managers/river/default.nix#L41)
-        zig_0_12
+        zig_0_14
         zathura
 
         pango
@@ -51,7 +45,7 @@
 
         nativeBuildInputs =
           [
-            pkgs.zig_0_12.hook
+            pkgs.zig_0_14.hook
           ]
           ++ packages_without_hook;
       };
@@ -112,7 +106,8 @@
         with pkgs;
           [
             # unstable.zls
-            (flakeDefaultPackage inputs.zls)
+            # (flakeDefaultPackage inputs.zls)
+            zls_0_14
             (import inputs.nixpkgs {
               overlays = [zathura-images-overlay];
               inherit system;
